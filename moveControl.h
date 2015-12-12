@@ -13,7 +13,7 @@ OVERLAPPED Wol;
 void sendMessage1(char c)
 {
 	DWORD  BytesToSend = 0;
-	ComPort port("\\\\.\\COM13");
+	ComPort port("\\\\.\\COM9");
 	unsigned char* temp;
 	temp = new unsigned char[10];
 	for (int i = 0; i<10; i++) temp[i] = c;

@@ -10,7 +10,7 @@
 extern int m(int i, int j);
 //#include "moveControl.cpp"
 const double picktres = 45;
-const double reachtres = 22;
+const double reachtres = 50;
 const double rotatetres = 25;
 using namespace std;
 using namespace cv;
