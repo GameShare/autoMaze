@@ -9,9 +9,9 @@
 #include"moveControl.h"
 extern int m(int i, int j);
 //#include "moveControl.cpp"
-const double picktres = 45;
+const double picktres = 65;
 const double reachtres = 50;
-const double rotatetres = 25;
+const double rotatetres = 7;
 using namespace std;
 using namespace cv;
 //int maze[1000][1000]={};
@@ -175,6 +175,11 @@ void changeDir(double headX, double headY, double tailX, double tailY, double so
 	double vecCX = headX - tailX, vecCY = headY - tailY, vecRX = targX - sourX, vecRY = targY - sourY;
 	double angle = asin((vecCX*vecRY - vecRX*vecCY) / (sqrt(vecCX*vecCX + vecCY*vecCY)*sqrt(vecRX*vecRX + vecRY*vecRY)));
 	angle = angle / 3.14 * 180;
+	if ((vecCX*vecRX + vecRY*vecCY) < 0)
+	{
+		if (angle > 0) angle = 180 - angle;
+		else angle = -180 - angle;
+	}
 	cout << "the angle is: " << angle<< ", the command is: ";
 	if (abs1(angle)<rotatetres)
 	{

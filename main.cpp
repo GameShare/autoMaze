@@ -13,7 +13,7 @@ int m(int i, int j);
 void cvThin(Mat* src, Mat* dst, int iterations = 1);
 int getFirst(Point2f *pl, int hx, int hy, int tx, int ty);
 
-VideoCapture cap(1);
+VideoCapture cap(0);
 
 Point2f win1Points[4];
 Point2f testPoints[2];
@@ -35,7 +35,7 @@ bool step3 = false;
 int trackObject = -1;
 
 //图像背景二值化的阈值
-int smin1 = 0, vmin1 = 20, vmax1 = 255;
+int smin1 = 0, vmin1 = 0, vmax1 = 255;
 int smin2 = 0, vmin2 = 20, vmax2 = 255;
 int smin = 0, vmin = 0, vmax = 255;
 
@@ -47,19 +47,11 @@ Mat maskbg;
 int main()
 {
 	/// 设定bin数目
-	int histSize = 180;
+	int histSize = 45;
 
 	namedWindow("test", CV_WINDOW_AUTOSIZE);
-	namedWindow("backProject1", CV_WINDOW_AUTOSIZE);
-	namedWindow("backProject2", CV_WINDOW_AUTOSIZE);
-	namedWindow("bin", CV_WINDOW_AUTOSIZE);
 	namedWindow("win4", CV_WINDOW_AUTOSIZE);
-	namedWindow("win2",CV_WINDOW_AUTOSIZE);
-	createTrackbar("vmin1", "backProject1", &vmin1, 255);
-	createTrackbar("vmax1", "backProject1", &vmax1, 255);
-	createTrackbar("vmin2", "backProject2", &vmin2, 255);
-	createTrackbar("vmax2", "backProject2", &vmax2, 255);
-	createTrackbar("histSize", "bin", &histSize, 180);
+	namedWindow("win2", CV_WINDOW_AUTOSIZE);
 	Mat frame;
 	Mat hsvframe;
 	Mat hsvsrc1;
@@ -96,7 +88,7 @@ int main()
 
 	if (!cap.isOpened()) return -1;
 
-	bool first = true;
+	int first = 0;
 	int hx, hy, tx, ty, sox, soy, tax, tay, midx, midy;
 	int k = 0;
 	while (!stop)
@@ -141,7 +133,7 @@ int main()
 			//cvWarpPerspective(cvframe, transimg, transmat); //根据变换矩阵计算图像的变换
 			warpPerspective(frame, transImg, transMat, Size(newPoints[3].x, newPoints[3].y));
 			//cvNamedWindow("win2");
-			
+
 			//cvShowImage("win2", transimg);
 
 			imshow("win2", transImg);
@@ -159,35 +151,35 @@ int main()
 			int mx = testPoints[0].y;
 			int my = testPoints[0].x;
 			int i, j;
-			cout << "mx my:" << mx << my << endl;
+			//cout << "mx my:" << mx << my << endl;
 			for (i = 0; i<mx; i++)
 			{
 				for (j = 0; j<my; j++)
 					if (m(i, j) == 0) break;
 				if (m(i, j) == 0) break;
 			}
-			sx = i; 
+			sx = i;
 			sy = j;
 			mx = testPoints[1].y;
 			my = testPoints[1].x;
-			cout << "mx my:" << mx << my << endl;
-			for (i = afterThin.rows-1; i >= mx; i--)
+			//cout << "mx my:" << mx << my << endl;
+			for (i = afterThin.rows - 1; i >= mx; i--)
 			{
-				for (j = afterThin.cols-1; j >= my; j--)
+				for (j = afterThin.cols - 1; j >= my; j--)
 					if (m(i, j) == 0) break;
 				if (m(i, j) == 0) break;
 			}
-			int ex = i; 
+			int ex = i;
 			int ey = j;
 			pl = new Point2f[1000000];
-			cout << "sx,sy:" << sx << ' ' << sy << endl;
-			cout << "ex,ey:" << ex << ' ' << ey << endl;
+			//cout << "sx,sy:" << sx << ' ' << sy << endl;
+			//cout << "ex,ey:" << ex << ' ' << ey << endl;
 			calcMaze(sx, sy, ex, ey, afterThin.rows, afterThin.cols, pl);
 			step2 = false;
 			enableWin3 = true;
 
 		}
-		
+
 
 
 
@@ -207,21 +199,22 @@ int main()
 				/// 计算直方图:
 				calcHist(&splitsrcImg1[0], 1, 0, Mat(), h_hist1, 1, &histSize, &histRange, uniform, accumulate);
 				calcHist(&splitsrcImg2[0], 1, 0, Mat(), h_hist2, 1, &histSize, &histRange, uniform, accumulate);
+				normalize(h_hist1, h_hist1, 0, 255, NORM_MINMAX);
+				normalize(h_hist2, h_hist2, 0, 255, NORM_MINMAX);
+
+
 			}
 
 			//转换颜色空间
-			
+
 			cvtColor(transImg, hsvframe, CV_RGB2HSV);
 			cvWaitKey(1);
 			inRange(transImg, Scalar(vmin1, vmin1, vmin1), Scalar(vmax1, vmax1, vmax1), mask1);
 			inRange(transImg, Scalar(vmin2, vmin2, vmin2), Scalar(vmax2, vmax2, vmax2), mask2);//其实可以添加两个mask来适配两个跟踪的物体
-			mask1 &= maskbg;
-			mask2 &= maskbg;
+			//mask1 &= maskbg;
+			//mask2 &= maskbg;
 			//分离通道HSV
 			split(hsvframe, splitImg);
-			imshow("hsv", hsvframe);
-
-			
 
 			calcBackProject(&splitImg[0], 1, 0, h_hist1, backProject1, &histRange);
 			calcBackProject(&splitImg[0], 1, 0, h_hist2, backProject2, &histRange);
@@ -231,40 +224,31 @@ int main()
 			backProject2 &= mask2;
 
 
-			imshow("backProject1", backProject1);
-			imshow("backProject2", backProject2);
+			//imshow("backProject1", backProject1);
+			//imshow("backProject2", backProject2);
 
 			//对于两个目标进行跟踪
 			RotatedRect trackBox1 = CamShift(backProject1, trackWindow1, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 10, 1));
 			ellipse(transImg, trackBox1, Scalar(0, 0, 255), 3, LINE_AA);
-			trackWindow1 = Rect(trackBox1.center, trackBox1.size);
+			//trackWindow1 = Rect(trackBox1.center, trackBox1.size);
 
 			RotatedRect trackBox2 = CamShift(backProject2, trackWindow2, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 10, 1));
 			ellipse(transImg, trackBox2, Scalar(0, 0, 255), 1, LINE_AA);
-			trackWindow2 = Rect(trackBox2.center, trackBox2.size);
+			//trackWindow2 = Rect(trackBox2.center, trackBox2.size);
 
 			if (trackWindow1.area() <= 1)
 			{
-				trackWindow1 = Rect(0, 0, 640, 480);
-
-
-				/*
+				//trackWindow1 = Rect(0, 0, 640, 480);
 				int cols = backProject1.cols, rows = backProject1.rows, r = (MIN(cols, rows) + 5) / 6;
-				trackWindow1 = Rect(trackWindow1.x - r, trackWindow1.y - r,
-				trackWindow1.x + r, trackWindow1.y + r) &
-				Rect(0, 0, cols, rows);
-				*/
+				trackWindow1 = Rect(trackWindow1.x - r, trackWindow1.y - r, trackWindow1.x + r, trackWindow1.y + r) &Rect(0, 0, cols, rows);
 			}
 
 			if (trackWindow2.area() <= 1)
 			{
-				trackWindow2 = Rect(0, 0, 640, 480);
-				/*
+				//trackWindow2 = Rect(0, 0, 640, 480);
+
 				int cols = backProject2.cols, rows = backProject2.rows, r = (MIN(cols, rows) + 5) / 6;
-				trackWindow2 = Rect(trackWindow2.x - r, trackWindow2.y - r,
-				trackWindow2.x + r, trackWindow2.y + r) &
-				Rect(0, 0, cols, rows);
-				*/
+				trackWindow2 = Rect(trackWindow2.x - r, trackWindow2.y - r, trackWindow2.x + r, trackWindow2.y + r) &Rect(0, 0, cols, rows);
 			}
 
 
@@ -273,47 +257,58 @@ int main()
 			line(transImg, trackBox1.center, trackBox2.center, Scalar(255, 255, 255));
 			imshow("test2", transImg);
 
-
+			first++;
 
 			hx = trackBox1.center.y;
 			hy = trackBox1.center.x;
 			tx = trackBox2.center.y;
 			ty = trackBox2.center.x;
-			cout << "hx hy:" << hx << ' ' << hy << endl;
-			cout << "tx ty:" << tx << ' ' << ty << endl;
-			midx = (hx + tx) / 2;
-			midy = (hy + ty) / 2;
+			//cout << "hx hy:" << hx << ' ' << hy << endl;
+			//cout << "tx ty:" << tx << ' ' << ty << endl;
+			//midx = (hx + tx) / 2;
+			//midy = (hy + ty) / 2;
+			midx = hx;
+			midy = hy;
 			//得到hx,hy,tx,ty
-			if (first)
+			if (first==5)
 			{
 				sox = midx;
 				soy = midy;
-				//k = getFirst(pl, hx, hy, tx, ty);
-				k = 1;
+				k = getFirst(pl, hx, hy, tx, ty);
+				//k = 1;
 				tax = pl[k].x;
 				tay = pl[k].y;
-				first = false;
+				//first ++;
 			}
-			cout << "first k: " << k << endl;
-			//Sleep(1000);//每隔1s判断一次
-			cout << "distance:" << sqrt((tax - midx)*(tax - midx) + (tay - midy)*(tay - midy)) << endl;
-			if (sqrt((tax - midx)*(tax - midx) + (tay - midy)*(tay - midy))<reachtres)
-			{
-				k++;
-				sox = tax;
-				soy = tay;
-				tax = pl[k].x;
-				tay = pl[k].y;
+			else{
+				//new 
+				sox = midx;
+				soy = midy;
+				//new
+				cout << "k: " << k << endl;
+				//Sleep(1000);//每隔1s判断一次
+				cout << "distance:" << sqrt((tax - midx)*(tax - midx) + (tay - midy)*(tay - midy)) << endl;
+				if (sqrt((tax - midx)*(tax - midx) + (tay - midy)*(tay - midy)) < reachtres)
+				{
+					k++;
+					//sox = tax;
+					sox = midx;
+					//soy = tay;
+					soy = midy;
+					tax = pl[k].x;
+					tay = pl[k].y;
+				}
+				cout << "tx ty: " << tx << ' ' << ty << endl;
+				cout << "hx hy: " << hx << ' ' << hy << endl;
+				cout << "sox soy: " << sox << ' ' << soy << endl;
+				cout << "tax tay: " << tax << ' ' << tay << endl;
+				changeDir(hx, hy, tx, ty, sox, soy, tax, tay);
 			}
-			cout << "sox soy: " << sox << ' ' << soy << endl;
-			cout << "tax tay: " << tax << ' ' << tay << endl;
-			changeDir(hx, hy, tx, ty, sox, soy, tax, tay);
-
 		}
 
 
 		//退出程序
-		if (waitKey(1) =='q')
+		if (waitKey(1) == 'q')
 			stop = true;
 
 	}
@@ -328,9 +323,9 @@ void on_mouse1(int event, int x, int y, int flags, void *ustc)
 	static int count = 0;
 	if (enableWin1)
 	{
-		if (event == CV_EVENT_LBUTTONDOWN&&count < 4&&!step1)
+		if (event == CV_EVENT_LBUTTONDOWN&&count < 4 && !step1)
 		{
-			cout << '(' << x << ',' << y << ')' << endl;
+			//cout << '(' << x << ',' << y << ')' << endl;
 			//originpoints[count] = cvPoint2D32f(x, y);
 			win1Points[count] = Point2f(x, y);
 			count++;
@@ -341,7 +336,7 @@ void on_mouse1(int event, int x, int y, int flags, void *ustc)
 			enableWin1 = false;
 		}
 	}
-	
+
 }
 
 void on_mouse2(int event, int x, int y, int flags, void *ustc)
@@ -349,9 +344,9 @@ void on_mouse2(int event, int x, int y, int flags, void *ustc)
 	static int count = 0;
 	if (enableWin2)
 	{
-		if (count < 2 &&!step2&&event == CV_EVENT_LBUTTONDOWN)
+		if (count < 2 && !step2&&event == CV_EVENT_LBUTTONDOWN)
 		{
-			cout << '(' << x << ',' << y << ')' << endl;
+			//cout << '(' << x << ',' << y << ')' << endl;
 			testPoints[count] = Point2f(x, y);
 			count++;
 		}
@@ -370,7 +365,7 @@ void on_mouse3(int event, int x, int y, int flags, void *ustc)
 	{
 		if (count < 4 && !step3&&event == CV_EVENT_LBUTTONDOWN)
 		{
-			cout << '(' << x << ',' << y << ')' << endl;
+			//cout << '(' << x << ',' << y << ')' << endl;
 			originPoints[count] = Point2f(x, y);
 			count++;
 		}
@@ -405,12 +400,12 @@ void changeimg()
 			mask.ptr<uchar>(i)[j] = (uchar)(255 - (int)mask.ptr<uchar>(i)[j]);
 		}
 	}
-		
+
 	imshow("win3", mask);
 	maskbg = mask.clone();
 	while (true)
 	{
-		cvThin(&mask, &afterThin,10);
+		cvThin(&mask, &afterThin, 10);
 		imshow("win4", afterThin);
 		if (waitKey() == 't') afterThin.copyTo(mask);
 		else break;
@@ -442,7 +437,7 @@ void cvThin(Mat* src, Mat* dst, int iterations)
 					int a = 0, b = 0;
 					int d[8][2] = { { -1, 0 }, { -1, 1 }, { 0, 1 }, { 1, 1 }, { 1, 0 }, { 1, -1 }, { 0, -1 }, { -1, -1 } };
 					int p[8];
-					p[0] = (i == 0) ? 0 : (int)t_image.ptr<uchar>(i-1)[j];
+					p[0] = (i == 0) ? 0 : (int)t_image.ptr<uchar>(i - 1)[j];
 					for (int k = 1; k <= 8; k++) {
 						if (i + d[k % 8][0] < 0 || i + d[k % 8][0] >= src->rows || j + d[k % 8][1] < 0 || j + d[k % 8][1] >= src->cols) p[k % 8] = 0;
 						else p[k % 8] = (int)t_image.ptr<uchar>(i + d[k % 8][0])[j + d[k % 8][1]];
@@ -451,18 +446,18 @@ void cvThin(Mat* src, Mat* dst, int iterations)
 							if (!p[k - 1]) a++;
 						}
 					}
-					if (b >= 2 && b <= 6 && a == 1) if (!s && !(p[2] && p[4] && (p[0] || p[6]))) dst->ptr<uchar>(i)[j] =0;
+					if (b >= 2 && b <= 6 && a == 1) if (!s && !(p[2] && p[4] && (p[0] || p[6]))) dst->ptr<uchar>(i)[j] = 0;
 					else if (s && !(p[0] && p[6] && (p[2] || p[4]))) dst->ptr<uchar>(i)[j] = 0;
 				}
 			}
 		}
-			
-	}
+
+		}
 }
 
 int m(int i, int j)
 {
-	return 1-((int)afterThin.ptr<uchar>(i)[j]) / 255;
+	return 1 - ((int)afterThin.ptr<uchar>(i)[j]) / 255;
 }
 
 int getFirst(Point2f *pl, int hx, int hy, int tx, int ty)
