@@ -11,7 +11,7 @@ extern int m(int i, int j);
 //#include "moveControl.cpp"
 const double picktres = 65;
 const double reachtres = 50;
-const double rotatetres = 7;
+const double rotatetres = 15;
 using namespace std;
 using namespace cv;
 //int maze[1000][1000]={};

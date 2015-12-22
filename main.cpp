@@ -13,10 +13,10 @@ int m(int i, int j);
 void cvThin(Mat* src, Mat* dst, int iterations = 1);
 int getFirst(Point2f *pl, int hx, int hy, int tx, int ty);
 
-VideoCapture cap(0);
+VideoCapture cap(2);
 
 Point2f win1Points[4];
-Point2f testPoints[2];
+Point2f testPoints[4];
 Point2f originPoints[4];
 
 bool beginTrack = false;
@@ -114,8 +114,8 @@ int main()
 			Point2f newPoints[4];
 			newPoints[0] = Point2f(0, 0);
 			newPoints[1] = Point2f(0, frame.rows);
-			newPoints[2] = Point2f(frame.cols, 0);
-			newPoints[3] = Point2f(frame.cols, frame.rows);
+			newPoints[2] = Point2f(frame.cols , 0);
+			newPoints[3] = Point2f(frame.cols , frame.rows );
 
 
 
@@ -148,24 +148,34 @@ int main()
 		int sx, sy, ex, ey;
 		if (step2)
 		{
-			int mx = testPoints[0].y;
-			int my = testPoints[0].x;
+			int m1x = testPoints[0].y;
+			int m1y = testPoints[0].x;
+			int m2x = testPoints[1].y;
+			int m2y = testPoints[1].x;
 			int i, j;
 			//cout << "mx my:" << mx << my << endl;
-			for (i = 0; i<mx; i++)
+			for (i = m1x; i<m2x; i++)
 			{
-				for (j = 0; j<my; j++)
+				for (j = m1y; j<m2y; j++)
 					if (m(i, j) == 0) break;
 				if (m(i, j) == 0) break;
 			}
 			sx = i;
 			sy = j;
-			mx = testPoints[1].y;
-			my = testPoints[1].x;
+			m1x = testPoints[2].y;
+			m1y = testPoints[2].x;
+			m2x = testPoints[3].y;
+			m2y = testPoints[3].x;
 			//cout << "mx my:" << mx << my << endl;
-			for (i = afterThin.rows - 1; i >= mx; i--)
+			/*			for (i = afterThin.rows - 1; i >= mx; i--)
 			{
-				for (j = afterThin.cols - 1; j >= my; j--)
+			for (j = afterThin.cols - 1; j >= my; j--)
+			if (m(i, j) == 0) break;
+			if (m(i, j) == 0) break;
+			}*/
+			for (i = m1x; i<m2x; i++)
+			{
+				for (j = m1y; j<m2y; j++)
 					if (m(i, j) == 0) break;
 				if (m(i, j) == 0) break;
 			}
@@ -211,9 +221,9 @@ int main()
 			cvWaitKey(1);
 			inRange(transImg, Scalar(vmin1, vmin1, vmin1), Scalar(vmax1, vmax1, vmax1), mask1);
 			inRange(transImg, Scalar(vmin2, vmin2, vmin2), Scalar(vmax2, vmax2, vmax2), mask2);//其实可以添加两个mask来适配两个跟踪的物体
-			//mask1 &= maskbg;
-			//mask2 &= maskbg;
-			//分离通道HSV
+																							   //mask1 &= maskbg;
+																							   //mask2 &= maskbg;
+																							   //分离通道HSV
 			split(hsvframe, splitImg);
 
 			calcBackProject(&splitImg[0], 1, 0, h_hist1, backProject1, &histRange);
@@ -228,11 +238,11 @@ int main()
 			//imshow("backProject2", backProject2);
 
 			//对于两个目标进行跟踪
-			RotatedRect trackBox1 = CamShift(backProject1, trackWindow1, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 10, 1));
+			RotatedRect trackBox1 = CamShift(backProject1, trackWindow1, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 3, 1));
 			ellipse(transImg, trackBox1, Scalar(0, 0, 255), 3, LINE_AA);
 			//trackWindow1 = Rect(trackBox1.center, trackBox1.size);
 
-			RotatedRect trackBox2 = CamShift(backProject2, trackWindow2, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 10, 1));
+			RotatedRect trackBox2 = CamShift(backProject2, trackWindow2, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 3, 1));
 			ellipse(transImg, trackBox2, Scalar(0, 0, 255), 1, LINE_AA);
 			//trackWindow2 = Rect(trackBox2.center, trackBox2.size);
 
@@ -270,7 +280,7 @@ int main()
 			midx = hx;
 			midy = hy;
 			//得到hx,hy,tx,ty
-			if (first==5)
+			if (first == 5)
 			{
 				sox = midx;
 				soy = midy;
@@ -280,7 +290,7 @@ int main()
 				tay = pl[k].y;
 				//first ++;
 			}
-			else{
+			else {
 				//new 
 				sox = midx;
 				soy = midy;
@@ -344,13 +354,13 @@ void on_mouse2(int event, int x, int y, int flags, void *ustc)
 	static int count = 0;
 	if (enableWin2)
 	{
-		if (count < 2 && !step2&&event == CV_EVENT_LBUTTONDOWN)
+		if (count < 4 && !step2&&event == CV_EVENT_LBUTTONDOWN)
 		{
 			//cout << '(' << x << ',' << y << ')' << endl;
 			testPoints[count] = Point2f(x, y);
 			count++;
 		}
-		if (count == 2)
+		if (count == 4)
 		{
 			enableWin2 = false;
 			step2 = true;
@@ -395,8 +405,8 @@ void changeimg()
 		if (waitKey(30) >= 0) break;
 	}
 
-	for (int i = 0; i < mask.rows; i++){
-		for (int j = 0; j < mask.cols; j++){
+	for (int i = 0; i < mask.rows; i++) {
+		for (int j = 0; j < mask.cols; j++) {
 			mask.ptr<uchar>(i)[j] = (uchar)(255 - (int)mask.ptr<uchar>(i)[j]);
 		}
 	}
@@ -427,30 +437,30 @@ void cvThin(Mat* src, Mat* dst, int iterations)
 	//t_dat = t_image;
 	for (int n = 0; n < iterations; n++)
 		for (int s = 0; s <= 1; s++) {
-		//cvCopyImage(dst, t_image);
-		dst->copyTo(t_image);
-		for (int i = 0; i < src->rows; i++)
-		{
-			for (int j = 0; j < src->cols; j++)
+			//cvCopyImage(dst, t_image);
+			dst->copyTo(t_image);
+			for (int i = 0; i < src->rows; i++)
 			{
-				if ((int)t_image.ptr<uchar>(i)[j]){
-					int a = 0, b = 0;
-					int d[8][2] = { { -1, 0 }, { -1, 1 }, { 0, 1 }, { 1, 1 }, { 1, 0 }, { 1, -1 }, { 0, -1 }, { -1, -1 } };
-					int p[8];
-					p[0] = (i == 0) ? 0 : (int)t_image.ptr<uchar>(i - 1)[j];
-					for (int k = 1; k <= 8; k++) {
-						if (i + d[k % 8][0] < 0 || i + d[k % 8][0] >= src->rows || j + d[k % 8][1] < 0 || j + d[k % 8][1] >= src->cols) p[k % 8] = 0;
-						else p[k % 8] = (int)t_image.ptr<uchar>(i + d[k % 8][0])[j + d[k % 8][1]];
-						if (p[k % 8]) {
-							b++;
-							if (!p[k - 1]) a++;
+				for (int j = 0; j < src->cols; j++)
+				{
+					if ((int)t_image.ptr<uchar>(i)[j]) {
+						int a = 0, b = 0;
+						int d[8][2] = { { -1, 0 },{ -1, 1 },{ 0, 1 },{ 1, 1 },{ 1, 0 },{ 1, -1 },{ 0, -1 },{ -1, -1 } };
+						int p[8];
+						p[0] = (i == 0) ? 0 : (int)t_image.ptr<uchar>(i - 1)[j];
+						for (int k = 1; k <= 8; k++) {
+							if (i + d[k % 8][0] < 0 || i + d[k % 8][0] >= src->rows || j + d[k % 8][1] < 0 || j + d[k % 8][1] >= src->cols) p[k % 8] = 0;
+							else p[k % 8] = (int)t_image.ptr<uchar>(i + d[k % 8][0])[j + d[k % 8][1]];
+							if (p[k % 8]) {
+								b++;
+								if (!p[k - 1]) a++;
+							}
 						}
+						if (b >= 2 && b <= 6 && a == 1) if (!s && !(p[2] && p[4] && (p[0] || p[6]))) dst->ptr<uchar>(i)[j] = 0;
+						else if (s && !(p[0] && p[6] && (p[2] || p[4]))) dst->ptr<uchar>(i)[j] = 0;
 					}
-					if (b >= 2 && b <= 6 && a == 1) if (!s && !(p[2] && p[4] && (p[0] || p[6]))) dst->ptr<uchar>(i)[j] = 0;
-					else if (s && !(p[0] && p[6] && (p[2] || p[4]))) dst->ptr<uchar>(i)[j] = 0;
 				}
 			}
-		}
 
 		}
 }

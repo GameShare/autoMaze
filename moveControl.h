@@ -7,7 +7,7 @@
 #include <sstream>
 #include <Windows.h>
 
-ComPort port("\\\\.\\COM9");
+ComPort port("\\\\.\\COM3");
 OVERLAPPED Wol;
 
 void sendMessage1(char c)
