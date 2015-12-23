@@ -31,13 +31,13 @@ bool enableWin2 = false;
 bool step2 = false;
 bool enableWin3 = false;
 bool step3 = false;
-
+int llen;
 int trackObject = -1;
 
 //图像背景二值化的阈值
 int smin1 = 0, vmin1 = 0, vmax1 = 255;
 int smin2 = 0, vmin2 = 20, vmax2 = 255;
-int smin = 0, vmin = 0, vmax = 255;
+int smin = 0, vmin = 0, vmax = 100;
 
 Mat transImg;
 Mat afterThin;
@@ -113,9 +113,9 @@ int main()
 			//CvPoint2D32f newpoints[4]; //保存这四个点的新坐标
 			Point2f newPoints[4];
 			newPoints[0] = Point2f(0, 0);
-			newPoints[1] = Point2f(0, frame.rows);
-			newPoints[2] = Point2f(frame.cols , 0);
-			newPoints[3] = Point2f(frame.cols , frame.rows );
+			newPoints[1] = Point2f(0, frame.rows/2);
+			newPoints[2] = Point2f(frame.cols/2 , 0);
+			newPoints[3] = Point2f(frame.cols/2, frame.rows/2);
 
 
 
@@ -137,7 +137,7 @@ int main()
 			//cvShowImage("win2", transimg);
 
 			imshow("win2", transImg);
-			if (waitKey(1) == 's'&&changeIS)
+			if (changeIS)
 			{
 				changeimg();
 				enableWin2 = true;
@@ -181,10 +181,10 @@ int main()
 			}
 			int ex = i;
 			int ey = j;
-			pl = new Point2f[1000000];
+			pl = new Point2f[1000];
 			//cout << "sx,sy:" << sx << ' ' << sy << endl;
 			//cout << "ex,ey:" << ex << ' ' << ey << endl;
-			calcMaze(sx, sy, ex, ey, afterThin.rows, afterThin.cols, pl);
+			calcMaze(sx, sy, ex, ey, afterThin.rows, afterThin.cols, pl, llen);
 			step2 = false;
 			enableWin3 = true;
 
@@ -218,12 +218,12 @@ int main()
 			//转换颜色空间
 
 			cvtColor(transImg, hsvframe, CV_RGB2HSV);
-			cvWaitKey(1);
 			inRange(transImg, Scalar(vmin1, vmin1, vmin1), Scalar(vmax1, vmax1, vmax1), mask1);
-			inRange(transImg, Scalar(vmin2, vmin2, vmin2), Scalar(vmax2, vmax2, vmax2), mask2);//其实可以添加两个mask来适配两个跟踪的物体
-																							   //mask1 &= maskbg;
-																							   //mask2 &= maskbg;
-																							   //分离通道HSV
+			inRange(transImg, Scalar(vmin2, vmin2, vmin2), Scalar(vmax2, vmax2, vmax2), mask2);
+			//其实可以添加两个mask来适配两个跟踪的物体
+			//mask1 &= maskbg;
+			//mask2 &= maskbg;
+			//分离通道HSV
 			split(hsvframe, splitImg);
 
 			calcBackProject(&splitImg[0], 1, 0, h_hist1, backProject1, &histRange);
@@ -238,11 +238,11 @@ int main()
 			//imshow("backProject2", backProject2);
 
 			//对于两个目标进行跟踪
-			RotatedRect trackBox1 = CamShift(backProject1, trackWindow1, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 3, 1));
+			RotatedRect trackBox1 = CamShift(backProject1, trackWindow1, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 5, 1));
 			ellipse(transImg, trackBox1, Scalar(0, 0, 255), 3, LINE_AA);
 			//trackWindow1 = Rect(trackBox1.center, trackBox1.size);
 
-			RotatedRect trackBox2 = CamShift(backProject2, trackWindow2, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 3, 1));
+			RotatedRect trackBox2 = CamShift(backProject2, trackWindow2, TermCriteria(TermCriteria::EPS | TermCriteria::COUNT, 5, 1));
 			ellipse(transImg, trackBox2, Scalar(0, 0, 255), 1, LINE_AA);
 			//trackWindow2 = Rect(trackBox2.center, trackBox2.size);
 
@@ -275,10 +275,10 @@ int main()
 			ty = trackBox2.center.x;
 			//cout << "hx hy:" << hx << ' ' << hy << endl;
 			//cout << "tx ty:" << tx << ' ' << ty << endl;
-			//midx = (hx + tx) / 2;
-			//midy = (hy + ty) / 2;
-			midx = hx;
-			midy = hy;
+			midx = (hx + tx) / 2;
+			midy = (hy + ty) / 2;
+			//midx = hx;
+			//midy = hy;
 			//得到hx,hy,tx,ty
 			if (first == 5)
 			{
@@ -300,7 +300,7 @@ int main()
 				cout << "distance:" << sqrt((tax - midx)*(tax - midx) + (tay - midy)*(tay - midy)) << endl;
 				if (sqrt((tax - midx)*(tax - midx) + (tay - midy)*(tay - midy)) < reachtres)
 				{
-					k++;
+					k=(k+1)%llen;
 					//sox = tax;
 					sox = midx;
 					//soy = tay;
@@ -335,8 +335,7 @@ void on_mouse1(int event, int x, int y, int flags, void *ustc)
 	{
 		if (event == CV_EVENT_LBUTTONDOWN&&count < 4 && !step1)
 		{
-			//cout << '(' << x << ',' << y << ')' << endl;
-			//originpoints[count] = cvPoint2D32f(x, y);
+			cout << '(' << x << ',' << y << ')' << endl;
 			win1Points[count] = Point2f(x, y);
 			count++;
 		}
@@ -356,7 +355,7 @@ void on_mouse2(int event, int x, int y, int flags, void *ustc)
 	{
 		if (count < 4 && !step2&&event == CV_EVENT_LBUTTONDOWN)
 		{
-			//cout << '(' << x << ',' << y << ')' << endl;
+			cout << '(' << x << ',' << y << ')' << endl;
 			testPoints[count] = Point2f(x, y);
 			count++;
 		}
@@ -375,7 +374,7 @@ void on_mouse3(int event, int x, int y, int flags, void *ustc)
 	{
 		if (count < 4 && !step3&&event == CV_EVENT_LBUTTONDOWN)
 		{
-			//cout << '(' << x << ',' << y << ')' << endl;
+			cout << '(' << x << ',' << y << ')' << endl;
 			originPoints[count] = Point2f(x, y);
 			count++;
 		}
@@ -390,29 +389,31 @@ void on_mouse3(int event, int x, int y, int flags, void *ustc)
 //图像投影变换
 void changeimg()
 {
-	namedWindow("win3");
+	//namedWindow("win3");
 
 
 	Mat mask;
-	createTrackbar("vmin1", "win3", &vmin, 255);
-	createTrackbar("vmax1", "win3", &vmax, 255);
+	//createTrackbar("vmin1", "win3", &vmin, 255);
+	//createTrackbar("vmax1", "win3", &vmax, 255);
 
-
+	/*
 	while (true)
 	{
 		inRange(transImg, Scalar(0, smin, vmin), Scalar(180, 256, vmax), mask);
 		imshow("win3", mask);
 		if (waitKey(30) >= 0) break;
 	}
-
+	*/
+	inRange(transImg, Scalar(0, smin, vmin), Scalar(180, 256, vmax), mask);
 	for (int i = 0; i < mask.rows; i++) {
 		for (int j = 0; j < mask.cols; j++) {
 			mask.ptr<uchar>(i)[j] = (uchar)(255 - (int)mask.ptr<uchar>(i)[j]);
 		}
 	}
 
-	imshow("win3", mask);
+	//imshow("win3", mask);
 	maskbg = mask.clone();
+	/*
 	while (true)
 	{
 		cvThin(&mask, &afterThin, 10);
@@ -420,6 +421,11 @@ void changeimg()
 		if (waitKey() == 't') afterThin.copyTo(mask);
 		else break;
 	}
+	*/
+	cvThin(&mask, &afterThin, 100);
+	imshow("win4", afterThin);
+
+
 
 }
 

@@ -9,9 +9,9 @@
 #include"moveControl.h"
 extern int m(int i, int j);
 //#include "moveControl.cpp"
-const double picktres = 65;
-const double reachtres = 50;
-const double rotatetres = 15;
+const double picktres = 30;
+const double reachtres = 23;
+const double rotatetres = 17;
 using namespace std;
 using namespace cv;
 //int maze[1000][1000]={};
@@ -88,7 +88,7 @@ public:
 	}
 };
 
-bool calcMaze(int sx, int sy, int ex, int ey, int a, int b, Point2f *pList)
+bool calcMaze(int sx, int sy, int ex, int ey, int a, int b, Point2f *pList, int &len)
 {
 	Queue q(1000000);
 	int i, j;
@@ -164,6 +164,7 @@ bool calcMaze(int sx, int sy, int ex, int ey, int a, int b, Point2f *pList)
 	{
 	cout << pList[i].x << " " << pList[i].y << endl;
 	}
+	len = tempn;
 	cout << tempn;
 	delete[] tpl;
 	return true;
