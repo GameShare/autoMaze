@@ -14,6 +14,8 @@ int inslen = 6;
 void sendMessage1(char c)
 {
 	DWORD  BytesToSend = 0;
+	//在内部打开多次防止蓝牙断线
+	//严重拖累速度！！！
 	//ComPort port("\\\\.\\COM9");
 	unsigned char* temp;
 	temp = new unsigned char[inslen];

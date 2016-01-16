@@ -8,13 +8,11 @@
 #include<Windows.h>
 #include"moveControl.h"
 extern int m(int i, int j);
-//#include "moveControl.cpp"
 const double picktres = 30;
 const double reachtres = 23;
 const double rotatetres = 17;
 using namespace std;
 using namespace cv;
-//int maze[1000][1000]={};
 const int dx[8] = { 0, -1, 0, 1, -1, 1, -1, 1 };
 const int dy[8] = { 1, 0, -1, 0, -1, -1, 1, 1 };
 struct Point
@@ -44,7 +42,6 @@ struct Node
 		ava = avain;
 	}
 };
-//Node t,s;
 class Queue
 {
 private:
@@ -110,7 +107,6 @@ bool calcMaze(int sx, int sy, int ex, int ey, int a, int b, Point2f *pList, int 
 		while (!q.isEmpty())
 		{
 			q.dequeue(t);
-			//cout<<t.x<<" "<<t.y<<endl;
 			for (i = 0; i<8; i++)
 			{
 				if ((t.x + dx[i] >= 0) && (t.x + dx[i]<a) && (t.y + dy[i] >= 0) && (t.y + dy[i]<b) &&
@@ -136,7 +132,6 @@ bool calcMaze(int sx, int sy, int ex, int ey, int a, int b, Point2f *pList, int 
 				if (dir != i)
 				{
 					dir = i;
-					//cout<<tempx<<" "<<tempy<<endl;
 					if (((tempx == ex) && (tempy == ey)) ||
 						(sqrt((tempx - tpl[tempn - 1].x)*(tempx - tpl[tempn - 1].x) + (tempy - tpl[tempn - 1].y)*(tempy - tpl[tempn - 1].y))>picktres))
 					{
@@ -152,7 +147,6 @@ bool calcMaze(int sx, int sy, int ex, int ey, int a, int b, Point2f *pList, int 
 		tx = mazet[tempx][tempy].fx;
 		ty = mazet[tempx][tempy].fy;
 	}
-	//cout<<sx<<" "<<sy;
 	tpl[tempn].x = sx;
 	tpl[tempn].y = sy;
 	tempn++;
@@ -198,8 +192,6 @@ void changeDir(double headX, double headY, double tailX, double tailY, double so
 		TurnRight();
 	}
 	cout << endl;
-	//angle<0.15 Turn Right
-	//abs1(angle)<0.15 Go Ahead
 }
 
 #endif
