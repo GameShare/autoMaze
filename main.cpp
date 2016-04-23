@@ -13,7 +13,7 @@ int m(int i, int j);
 void cvThin(Mat* src, Mat* dst, int iterations = 1);
 int getFirst(Point2f *pl, int hx, int hy, int tx, int ty);
 
-VideoCapture cap(2);
+VideoCapture cap(0);
 
 Point2f win1Points[4];
 Point2f testPoints[4];
